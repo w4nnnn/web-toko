@@ -16,8 +16,8 @@ function resolveAbsolute(targetPath) {
   return path.isAbsolute(targetPath) ? targetPath : path.join(projectRoot, targetPath);
 }
 
-const envDbDir = process.env.DATABASE_DIR || "./database";
-const envDbFile = process.env.DATABASE_FILE || "database.db";
+const envDbDir = process.env.DATABASE_DIR;
+const envDbFile = process.env.DATABASE_FILE;
 const dbDir = resolveAbsolute(envDbDir);
 const dbPath = path.join(dbDir, envDbFile);
 
