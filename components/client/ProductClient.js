@@ -182,15 +182,15 @@ export default function ProductClient({ onAddToCart }) {
       if (!Number.isFinite(minOriginal)) minOriginal = 0;
       if (!Number.isFinite(minFinal)) minFinal = minOriginal;
       const effectiveHasDiscount = hasDiscount;
-     		const formattedOriginal = `Rp ${Number(minOriginal || 0).toLocaleString('id-ID')}`;
-     		const formattedFinal = `Rp ${Number(minFinal || 0).toLocaleString('id-ID')}`;
+      const formattedOriginal = `Rp ${Number(minOriginal || 0).toLocaleString('id-ID')}`;
+      const formattedFinal = `Rp ${Number(minFinal || 0).toLocaleString('id-ID')}`;
 
       map.set(product.id, {
         minOriginal,
         minFinal,
         hasDiscount: effectiveHasDiscount,
-     			formattedOriginal,
-     			formattedFinal,
+        formattedOriginal,
+        formattedFinal,
       });
     });
     return map;
@@ -275,107 +275,109 @@ export default function ProductClient({ onAddToCart }) {
     return list;
   }, [filtered, sortBy, pricingByProduct]);
 
-    const productCardData = useMemo(() => {
-      return sorted.map((p) => {
-        const stock = Number.isFinite(p._totalStock) ? p._totalStock : 0;
-        const isOos = stock <= 0;
-        const pd = priceDisplay(p.units, p.id);
-        const cardClass = `rounded-lg min-h-[300px] ${isOos ? 'opacity-50 pointer-events-none' : ''}`;
-        const cardElement = (
-          <Card
-            hoverable={!isOos}
-            className={cardClass}
-            cover={
-              p.image_path ? (
-                <div className="w-full h-40 relative bg-gray-100 overflow-hidden rounded-t-lg">
-                  <Image
-                    src={`/api/product?filename=${p.image_path}`}
-                    alt={p.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    unoptimized
-                  />
+  const productCardData = useMemo(() => {
+    return sorted.map((p) => {
+      const stock = Number.isFinite(p._totalStock) ? p._totalStock : 0;
+      const isOos = stock <= 0;
+      const pd = priceDisplay(p.units, p.id);
+      const cardClass = `rounded-lg min-h-[300px] ${isOos ? 'opacity-50 pointer-events-none' : ''}`;
+      const cardElement = (
+        <Card
+          hoverable={!isOos}
+          className={cardClass}
+          cover={
+            p.image_path ? (
+              <div className="w-full h-40 relative bg-gray-100 overflow-hidden rounded-t-lg">
+                <Image
+                  src={`/api/product?filename=${p.image_path}`}
+                  alt={p.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="w-full h-40 flex items-center justify-center text-center bg-gray-100 text-gray-400">No Image</div>
+            )
+          }
+        >
+          <h3 className="mb-1 text-base font-semibold">{p.name}</h3>
+          <div className="flex justify-between items-center mt-3">
+            <div>
+              {pd.hasDiscount ? (
+                <div>
+                  <div className="text-sm text-gray-500 line-through">{pd.original}</div>
+                  <div className="text-sm font-bold text-green-600">{pd.final}</div>
                 </div>
               ) : (
-                <div className="w-full h-40 flex items-center justify-center text-center bg-gray-100 text-gray-400">No Image</div>
-              )
-            }
-          >
-            <h3 className="mb-1 text-base font-semibold">{p.name}</h3>
-            <div className="flex justify-between items-center mt-3">
-              <div>
-                {pd.hasDiscount ? (
-                  <div>
-                    <div className="text-sm text-gray-500 line-through">{pd.original}</div>
-                    <div className="text-sm font-bold text-green-600">{pd.final}</div>
-                  </div>
+                <div className="text-sm font-bold">{pd.final}</div>
+              )}
+              <div className="text-xs mt-1">
+                {stock > 0 ? (
+                  <span className="text-gray-500">
+                    {p.show_stock !== 0 ? `Stok: ${stock.toLocaleString("id-ID")}` : "Stok: Tersedia"}
+                  </span>
                 ) : (
-                  <div className="text-sm font-bold">{pd.final}</div>
+                  <span className="text-red-600 font-semibold">Stok: Habis</span>
                 )}
-                <div className="text-xs mt-1">
-                  {stock > 0 ? (
-                    <span className="text-gray-500">Stok: {stock.toLocaleString("id-ID")}</span>
-                  ) : (
-                    <span className="text-red-600 font-semibold">Stok: Habis</span>
-                  )}
-                </div>
               </div>
             </div>
-          </Card>
-        );
-        const clickable = isOos ? (
-          <div className="block" aria-disabled="true">
-            {cardElement}
           </div>
-        ) : (
-          <Link href={`/product/${p.id}`} className="block">
-            {cardElement}
-          </Link>
-        );
-        return { id: p.id, clickable };
-      });
-    }, [sorted, priceDisplay]);
-
-    const mobileProductContent = useMemo(() => {
-      if (productCardData.length === 0) {
-        return (
-          <Empty 
-            description="Tidak ada produk yang sesuai dengan filter"
-            className="py-10"
-          />
-        );
-      }
-      return (
-        <div className="flex flex-wrap -mx-2">
-          {productCardData.map(({ id, clickable }) => (
-            <div key={id} className="px-2 w-1/2 mb-4">
-              {clickable}
-            </div>
-          ))}
-        </div>
+        </Card>
       );
-    }, [productCardData]);
-
-    const desktopProductContent = useMemo(() => {
-      if (productCardData.length === 0) {
-        return (
-          <Empty 
-            description="Tidak ada produk yang sesuai dengan filter"
-            className="py-10"
-          />
-        );
-      }
-      return (
-        <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
-          {productCardData.map(({ id, clickable }) => (
-            <div key={id}>
-              {clickable}
-            </div>
-          ))}
+      const clickable = isOos ? (
+        <div className="block" aria-disabled="true">
+          {cardElement}
         </div>
+      ) : (
+        <Link href={`/product/${p.id}`} className="block">
+          {cardElement}
+        </Link>
       );
-    }, [productCardData]);
+      return { id: p.id, clickable };
+    });
+  }, [sorted, priceDisplay]);
+
+  const mobileProductContent = useMemo(() => {
+    if (productCardData.length === 0) {
+      return (
+        <Empty
+          description="Tidak ada produk yang sesuai dengan filter"
+          className="py-10"
+        />
+      );
+    }
+    return (
+      <div className="flex flex-wrap -mx-2">
+        {productCardData.map(({ id, clickable }) => (
+          <div key={id} className="px-2 w-1/2 mb-4">
+            {clickable}
+          </div>
+        ))}
+      </div>
+    );
+  }, [productCardData]);
+
+  const desktopProductContent = useMemo(() => {
+    if (productCardData.length === 0) {
+      return (
+        <Empty
+          description="Tidak ada produk yang sesuai dengan filter"
+          className="py-10"
+        />
+      );
+    }
+    return (
+      <div className="grid grid-cols-3 xl:grid-cols-4 gap-4">
+        {productCardData.map(({ id, clickable }) => (
+          <div key={id}>
+            {clickable}
+          </div>
+        ))}
+      </div>
+    );
+  }, [productCardData]);
 
   // Handle category checkbox change
   const handleCategoryChange = (categoryId, checked) => {
@@ -399,7 +401,7 @@ export default function ProductClient({ onAddToCart }) {
   return (
     <div>
       {contextHolder}
-      
+
       {/* Mobile Layout */}
       <div className="block lg:hidden">
         {/* Mobile Search and Filters */}
@@ -415,7 +417,7 @@ export default function ProductClient({ onAddToCart }) {
                 className="w-full"
               />
             </div>
-            
+
             <div className="flex flex-col gap-3">
               <div className="min-w-[200px]">
                 <Select
@@ -433,7 +435,7 @@ export default function ProductClient({ onAddToCart }) {
                   ))}
                 </Select>
               </div>
-              
+
               <div className="min-w-[160px]">
                 <Select
                   value={sortBy}
@@ -447,7 +449,7 @@ export default function ProductClient({ onAddToCart }) {
               </div>
             </div>
           </div>
-          
+
           {/* Mobile Filter Info */}
           <div className="flex flex-wrap gap-2 text-sm text-gray-600">
             <span>Menampilkan {sorted.length} dari {products.length} produk</span>
@@ -475,7 +477,7 @@ export default function ProductClient({ onAddToCart }) {
           <div className="sticky top-6 bg-white rounded-lg p-4">
             <div className="mb-4">
               <h3 className="font-semibold text-gray-800 mb-3">Filter</h3>
-              
+
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Kategori</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">

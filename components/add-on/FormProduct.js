@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Input, InputNumber, Button, Image, Card, Upload, Select, Space } from "antd";
+import { Modal, Form, Input, InputNumber, Button, Image, Card, Upload, Select, Space, Switch } from "antd";
 import { DeleteOutlined, AppstoreAddOutlined } from "@ant-design/icons";
 
 /**
@@ -30,10 +30,10 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
       }
     }
     load();
-  // listen for external updates to categories (so Select can refresh without page reload)
-  function onUpdated() { load(); }
-  if (typeof window !== 'undefined') window.addEventListener('categories:updated', onUpdated);
-  return () => { mounted = false; if (typeof window !== 'undefined') window.removeEventListener('categories:updated', onUpdated); };
+    // listen for external updates to categories (so Select can refresh without page reload)
+    function onUpdated() { load(); }
+    if (typeof window !== 'undefined') window.addEventListener('categories:updated', onUpdated);
+    return () => { mounted = false; if (typeof window !== 'undefined') window.removeEventListener('categories:updated', onUpdated); };
   }, []);
 
   useEffect(() => {
@@ -64,20 +64,20 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
     >
       <Form form={form} layout="vertical">
         <Form.Item label="Gambar">
-            <Upload
-              accept="image/*"
-              showUploadList={false}
-              beforeUpload={(file) => {
-                // kirim file ke parent sebagai event agar handler yang ada (fileToBase64) dipakai
-                if (typeof onFileChange === "function") {
-                  onFileChange({ target: { files: [file] } });
-                }
-                // kembalikan false agar Antd tidak melakukan upload otomatis
-                return false;
-              }}
-            >
-              <Button>Click to Upload</Button>
-            </Upload>
+          <Upload
+            accept="image/*"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              // kirim file ke parent sebagai event agar handler yang ada (fileToBase64) dipakai
+              if (typeof onFileChange === "function") {
+                onFileChange({ target: { files: [file] } });
+              }
+              // kembalikan false agar Antd tidak melakukan upload otomatis
+              return false;
+            }}
+          >
+            <Button>Click to Upload</Button>
+          </Upload>
           {fileData && (
             <div className="mt-2">
               <img src={`data:image;base64,${fileData}`} alt="preview" className="max-h-36 object-contain border" />
@@ -115,6 +115,10 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
           </Select>
         </Form.Item>
 
+        <Form.Item name="show_stock" label="Tampilkan Stok Pembeli" valuePropName="checked">
+          <Switch checkedChildren="Ya" unCheckedChildren="Tidak" />
+        </Form.Item>
+
         <Form.List name="units">
           {(fields, { add, remove }) => (
             <>
@@ -146,8 +150,8 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
                         label="Isi"
                         rules={[{ required: true, message: "Isi diperlukan" }]}
                       >
-                        <InputNumber 
-                          min={1} 
+                        <InputNumber
+                          min={1}
                           className="w-full"
                           formatter={(value) => {
                             if (value === undefined || value === null) return "";
@@ -196,8 +200,8 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
                         label="Stok"
                         rules={[{ required: true, message: "Stok diperlukan" }]}
                       >
-                        <InputNumber 
-                          min={0} 
+                        <InputNumber
+                          min={0}
                           className="w-full"
                           formatter={(value) => {
                             if (value === undefined || value === null) return "";
@@ -215,9 +219,9 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
                     </div>
 
                     <div className="flex items-center">
-                      <Button 
-                        icon={<DeleteOutlined />} 
-                        onClick={() => remove(name)} 
+                      <Button
+                        icon={<DeleteOutlined />}
+                        onClick={() => remove(name)}
                         danger
                       >
                       </Button>

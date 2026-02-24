@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Table, Button, Form, notification, Popconfirm, Image, Space, Tag, Input } from "antd";
+import { Table, Button, Form, notification, Popconfirm, Image, Space, Tag, Input, Upload } from "antd";
 import ProductForm from "@/components/add-on/FormProduct";
 import ModalCategories from "@/components/add-on/ModalCategories";
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, TagOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, TagOutlined, UploadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { downloadProductTemplate, parseProductExcel } from "@/lib/module/ExcelHandler";
 import { useRouter } from "next/navigation";
 
 export default function ManagementProduct() {
@@ -20,8 +21,8 @@ export default function ManagementProduct() {
   const [discounts, setDiscounts] = useState([]);
   const router = useRouter();
 
-  useEffect(() => { 
-    fetchProducts(); 
+  useEffect(() => {
+    fetchProducts();
     fetchDiscounts();
   }, []);
 
@@ -63,7 +64,10 @@ export default function ManagementProduct() {
     setEditing(null);
     setFileData(null);
     form.resetFields();
-    form.setFieldsValue({ units: [{ unit_name: "pcs", qty_per_unit: 1, price: 0, stock: 0 }] });
+    form.setFieldsValue({
+      show_stock: true,
+      units: [{ unit_name: "pcs", qty_per_unit: 1, price: 0, stock: 0 }]
+    });
     setModalOpen(true);
   };
 
@@ -74,6 +78,7 @@ export default function ManagementProduct() {
       name: record.name,
       description: record.description,
       category: record.category,
+      show_stock: record.show_stock === undefined ? true : Boolean(record.show_stock),
       units: Array.isArray(record.units) && record.units.length > 0
         ? record.units.map((u) => ({ unit_name: u.unit_name || "unit", qty_per_unit: u.qty_per_unit ?? 1, price: u.price ?? 0, stock: u.stock ?? 0, id: u.id }))
         : [{ unit_name: "pcs", qty_per_unit: 1, price: 0, stock: 0 }],
@@ -99,7 +104,13 @@ export default function ManagementProduct() {
       const values = await form.validateFields();
       setLoading(true);
       const units = (values.units || []).map((u) => ({ unit_name: String(u.unit_name || "unit"), qty_per_unit: Number(u.qty_per_unit || 1), price: Number(u.price || 0), stock: Number(u.stock || 0), id: u.id }));
-      const payload = { name: values.name, description: values.description || null, category: values.category || null, units };
+      const payload = {
+        name: values.name,
+        description: values.description || null,
+        category: values.category || null,
+        show_stock: values.show_stock ? 1 : 0,
+        units
+      };
       if (fileData) payload.base64 = fileData;
 
       let res;
@@ -112,7 +123,7 @@ export default function ManagementProduct() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { api.error({ message: data.error || "Gagal menyimpan produk" }); return; }
       api.success({ message: editing ? 'Produk diperbarui' : 'Produk ditambahkan' });
-      setModalOpen(false); form.resetFields(); setFileData(null); 
+      setModalOpen(false); form.resetFields(); setFileData(null);
       fetchProducts();
       fetchDiscounts(); // Refresh discounts when product changes
     } catch (err) {
@@ -125,6 +136,50 @@ export default function ManagementProduct() {
 
   const handleViewProduct = (productId) => {
     router.push(`/product/${productId}`);
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      setLoading(true);
+      await downloadProductTemplate();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportExcel = async (file) => {
+    try {
+      setLoading(true);
+      const productsArray = await parseProductExcel(file);
+
+      if (productsArray.length === 0) {
+        api.error({ message: "Tidak ada data produk yang valid untuk diimport" });
+        setLoading(false);
+        return false;
+      }
+
+      const res = await fetch("/api/product/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ products: productsArray }),
+      });
+
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        api.success({
+          message: `Berhasil import ${resData.successCount} produk. Gagal: ${resData.errorCount}`,
+        });
+        fetchProducts();
+      } else {
+        api.error({ message: resData.error || "Gagal import produk" });
+      }
+    } catch (err) {
+      console.error(err);
+      api.error({ message: "Gagal memproses file Excel" });
+    } finally {
+      setLoading(false);
+    }
+    return false; // Prevent upload action
   };
 
   // Helper function to calculate discount price
@@ -156,30 +211,30 @@ export default function ManagementProduct() {
   const formatPrice = (price) => `Rp ${Number(price || 0).toLocaleString('id-ID')}`;
 
   const columns = [
-    { 
-      title: 'Gambar', 
-      dataIndex: 'image_path', 
-      key: 'image_path', 
-      width: 100, 
-      render: (v) => v ? 
-        <Image src={`/api/product?filename=${v}`} alt="img" width={72} height={72} /> : 
-        <div className="w-18 h-18 bg-gray-100 flex items-center justify-center text-sm text-gray-400">No</div> 
+    {
+      title: 'Gambar',
+      dataIndex: 'image_path',
+      key: 'image_path',
+      width: 100,
+      render: (v) => v ?
+        <Image src={`/api/product?filename=${v}`} alt="img" width={72} height={72} /> :
+        <div className="w-18 h-18 bg-gray-100 flex items-center justify-center text-sm text-gray-400">No</div>
     },
-    { 
-      title: 'Nama', 
-      dataIndex: 'name', 
-      key: 'name', 
-      ellipsis: { showTitle: true }, 
+    {
+      title: 'Nama',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: { showTitle: true },
       sorter: (a, b) => a.name.localeCompare(b.name),
-      onCell: () => ({ style: { minWidth: 160, maxWidth: 380 } }), 
-      render: (v) => <div className="truncate">{v}</div> 
+      onCell: () => ({ style: { minWidth: 160, maxWidth: 380 } }),
+      render: (v) => <div className="truncate">{v}</div>
     },
-    { 
-      title: 'Units', 
-      key: 'units', 
-      render: (_, record) => { 
-        const units = record.units || []; 
-        if (!units.length) return <span className="text-gray-500">-</span>; 
+    {
+      title: 'Units',
+      key: 'units',
+      render: (_, record) => {
+        const units = record.units || [];
+        if (!units.length) return <span className="text-gray-500">-</span>;
         return (
           <div className="flex flex-col gap-2">
             {units.map((u) => (
@@ -189,21 +244,21 @@ export default function ManagementProduct() {
               </div>
             ))}
           </div>
-        ); 
-      } 
+        );
+      }
     },
-    { 
-      title: 'Stok', 
-      key: 'stock', 
+    {
+      title: 'Stok',
+      key: 'stock',
       sorter: (a, b) => {
         const totalA = (a.units || []).reduce((s, u) => s + (Number(u.stock) || 0), 0);
         const totalB = (b.units || []).reduce((s, u) => s + (Number(u.stock) || 0), 0);
         return totalA - totalB;
       },
-      render: (_, record) => { 
-        const units = record.units || []; 
-        if (!units.length) return <span className="text-gray-500">0</span>; 
-        const total = units.reduce((s, u) => s + (Number(u.stock) || 0), 0); 
+      render: (_, record) => {
+        const units = record.units || [];
+        if (!units.length) return <span className="text-gray-500">0</span>;
+        const total = units.reduce((s, u) => s + (Number(u.stock) || 0), 0);
         return (
           <div className="flex flex-col gap-2">
             {units.map((u) => (
@@ -215,27 +270,34 @@ export default function ManagementProduct() {
             <span className="mt-1 text-xs">
               Total: <span className="font-bold ml-1">{total.toLocaleString('id-ID')}</span>
             </span>
+            <div className="mt-1">
+              {record.show_stock !== 0 ? (
+                <Tag color="green" className="text-[10px] m-0">Stok Terlihat</Tag>
+              ) : (
+                <Tag color="orange" className="text-[10px] m-0">Stok Disembunyikan</Tag>
+              )}
+            </div>
           </div>
-        ); 
-      } 
+        );
+      }
     },
-    { 
-      title: 'Harga', 
-      key: 'price', 
+    {
+      title: 'Harga',
+      key: 'price',
       sorter: (a, b) => {
         const avgPriceA = (a.units || []).reduce((sum, u, i, arr) => sum + (Number(u.price) || 0), 0) / Math.max((a.units || []).length, 1);
         const avgPriceB = (b.units || []).reduce((sum, u, i, arr) => sum + (Number(u.price) || 0), 0) / Math.max((b.units || []).length, 1);
         return avgPriceA - avgPriceB;
       },
-      render: (_, record) => { 
-        const units = record.units || []; 
-        if (!units.length) return 'Rp 0'; 
+      render: (_, record) => {
+        const units = record.units || [];
+        if (!units.length) return 'Rp 0';
         return (
           <div className="flex flex-col gap-2">
             {units.map((u) => {
               const originalPrice = Number(u.price || 0);
               const discountPrice = calculateDiscountPrice(originalPrice, record.id, u.id);
-              
+
               return (
                 <div key={u.id || `${u.unit_name}_${u.price}`} className="flex flex-col text-sm">
                   <span className="font-semibold text-green-600">{u.unit_name}</span>
@@ -249,37 +311,37 @@ export default function ManagementProduct() {
               );
             })}
           </div>
-        ); 
-      } 
+        );
+      }
     },
     {
-      title: 'Aksi', 
-      key: 'actions', 
-      width: 150, 
-      align: 'center', 
+      title: 'Aksi',
+      key: 'actions',
+      width: 150,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            size="small" 
-            className="w-full sm:w-auto" 
+          <Button
+            size="small"
+            className="w-full sm:w-auto"
             onClick={() => handleViewProduct(record.id)}
             icon={<EyeOutlined />}
           />
-          <Button 
-            size="small" 
-            className="w-full sm:w-auto" 
+          <Button
+            size="small"
+            className="w-full sm:w-auto"
             onClick={() => openEdit(record)}
             icon={<EditOutlined />}
           />
-          <Popconfirm 
-            title="Hapus produk ini?" 
-            onConfirm={() => handleDelete(record.id)} 
-            okText="Ya" 
+          <Popconfirm
+            title="Hapus produk ini?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Ya"
             cancelText="Batal"
           >
-            <Button 
-              danger 
-              size="small" 
+            <Button
+              danger
+              size="small"
               className="w-full sm:w-auto"
               icon={<DeleteOutlined />}
             />
@@ -297,29 +359,33 @@ export default function ManagementProduct() {
       </header>
 
       <div className="mb-4 w-full flex justify-between gap-5 items-center">
-        <Input.Search placeholder="Cari produk..." allowClear onChange={(e)=>setQ(e.target.value)} onSearch={(val)=>setQ(val)} className="max-w-[520px]" />
-        <div className="flex flex-col gap-2">
-          <Button onClick={()=>setCatModalOpen(true)} icon={<TagOutlined />}>Kategori</Button>
+        <Input.Search placeholder="Cari produk..." allowClear onChange={(e) => setQ(e.target.value)} onSearch={(val) => setQ(val)} className="max-w-[520px]" />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={downloadTemplate} icon={<DownloadOutlined />}>Template Excel</Button>
+          <Upload beforeUpload={handleImportExcel} accept=".xlsx, .xls" showUploadList={false}>
+            <Button icon={<UploadOutlined />}>Import Excel</Button>
+          </Upload>
+          <Button onClick={() => setCatModalOpen(true)} icon={<TagOutlined />}>Kategori</Button>
           <Button type="primary" onClick={openCreate} icon={<PlusOutlined />}>Tambah Produk</Button>
         </div>
       </div>
 
       {(() => {
-        const needle = String(q||"").trim().toLowerCase();
-        const filteredProducts = !needle ? products : products.filter((p)=> String(p.name||"").toLowerCase().includes(needle) || String(p.description||"").toLowerCase().includes(needle));
+        const needle = String(q || "").trim().toLowerCase();
+        const filteredProducts = !needle ? products : products.filter((p) => String(p.name || "").toLowerCase().includes(needle) || String(p.description || "").toLowerCase().includes(needle));
         return (
-          <Table 
-            columns={columns} 
-            dataSource={filteredProducts} 
-            loading={loading} 
-            rowKey="id" 
+          <Table
+            columns={columns}
+            dataSource={filteredProducts}
+            loading={loading}
+            rowKey="id"
             pagination={{
               // use defaultPageSize so the table isn't fully controlled and the size chooser works
               defaultPageSize: 10,
-              pageSizeOptions: ['10','20','50','100'],
+              pageSizeOptions: ['10', '20', '50', '100'],
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => 
+              showTotal: (total, range) =>
                 `${range[0]}-${range[1]} of ${total} products`
             }}
             scroll={{ x: 800 }}
@@ -327,9 +393,9 @@ export default function ManagementProduct() {
         );
       })()}
 
-      <ProductForm open={modalOpen} onClose={()=>{ setModalOpen(false); form.resetFields(); setFileData(null); }} onSave={handleOk} form={form} editing={editing} fileData={fileData} onFileChange={handleFileChange} />
+      <ProductForm open={modalOpen} onClose={() => { setModalOpen(false); form.resetFields(); setFileData(null); }} onSave={handleOk} form={form} editing={editing} fileData={fileData} onFileChange={handleFileChange} />
 
-      <ModalCategories open={catModalOpen} onClose={()=>setCatModalOpen(false)} onSaved={()=>{ fetchProducts(); /* keep modal open to allow more edits/adds */ }} />
+      <ModalCategories open={catModalOpen} onClose={() => setCatModalOpen(false)} onSaved={() => { fetchProducts(); /* keep modal open to allow more edits/adds */ }} />
     </div>
   );
 }

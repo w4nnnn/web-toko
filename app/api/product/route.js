@@ -23,7 +23,7 @@ function successResponse(data, status = 200) {
 // Helper function to format product with category
 function formatProduct(product, categoryName = null) {
   if (!product) return null;
-  
+
   const formatted = { ...product };
   formatted.category = categoryName || product.category_name || product.category || null;
   delete formatted.category_name;
@@ -37,22 +37,22 @@ async function getProductsWithUnits(productIds = []) {
     const placeholders = productIds.map(() => "?").join(", ");
     units = await all(`SELECT * FROM product_units WHERE product_id IN (${placeholders}) ORDER BY id`, productIds);
   }
-  
+
   const unitsByProduct = {};
   units.forEach((u) => {
     (unitsByProduct[u.product_id] = unitsByProduct[u.product_id] || []).push(u);
   });
-  
+
   return unitsByProduct;
 }
 
 async function saveImageFromBase64(base64, baseName) {
   if (!base64?.trim()) return null;
-  
+
   const match = String(base64).match(/^data:(image\/[a-zA-Z+]+);base64,(.*)$/);
   const mime = match ? match[1] : null;
   const b64 = match ? match[2] : base64;
-  
+
   let buffer;
   try {
     buffer = Buffer.from(b64, "base64");
@@ -83,7 +83,7 @@ async function saveImageFromBase64(base64, baseName) {
   const ext = mime === "image/png" ? ".png" : mime === "image/jpeg" ? ".jpg" : ".webp";
   const filename = `${baseName}${ext}`;
   const filePath = path.join(productDir, filename);
-  
+
   try {
     fs.writeFileSync(filePath, buffer);
     return `product/${filename}`;
@@ -106,7 +106,7 @@ export async function GET(request) {
       if (!fs.existsSync(filePath)) {
         return errorResponse("Gambar tidak ditemukan", 404);
       }
-      
+
       const file = fs.readFileSync(filePath);
       const ext = path.extname(filename).toLowerCase();
       const mimeTypes = {
@@ -116,12 +116,12 @@ export async function GET(request) {
         '.jpeg': 'image/jpeg'
       };
       const mime = mimeTypes[ext] || 'application/octet-stream';
-      
-      return new Response(file, { 
-        headers: { 
+
+      return new Response(file, {
+        headers: {
           "Content-Type": mime,
           "Cache-Control": "public, max-age=31536000"
-        } 
+        }
       });
     }
 
@@ -135,19 +135,19 @@ export async function GET(request) {
          WHERE p.id = ?`,
         [id]
       );
-      
+
       if (!prod) {
         return successResponse(null);
       }
-      
+
       const units = await all(
-        "SELECT * FROM product_units WHERE product_id = ? ORDER BY id", 
+        "SELECT * FROM product_units WHERE product_id = ? ORDER BY id",
         [prod.id]
       );
-      
+
       const result = formatProduct(prod);
       result.units = units || [];
-      
+
       return successResponse(result);
     }
 
@@ -157,20 +157,20 @@ export async function GET(request) {
        LEFT JOIN categories c ON p.category_id = c.id 
        ORDER BY p.created_at DESC, p.id DESC`
     );
-    
+
     if (!products.length) {
       return successResponse([]);
     }
-    
+
     const productIds = products.map(p => p.id);
     const unitsByProduct = await getProductsWithUnits(productIds);
-    
+
     const result = products.map(p => {
       const formatted = formatProduct(p);
       formatted.units = unitsByProduct[p.id] || [];
       return formatted;
     });
-    
+
     return successResponse(result);
   } catch (err) {
     console.error("GET /api/product error:", err);
@@ -181,8 +181,8 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, description = null, category = null, base64 = null, units = [] } = body || {};
-    
+    const { name, description = null, category = null, base64 = null, units = [], show_stock = 1 } = body || {};
+
     if (!name?.trim()) {
       return errorResponse("Nama produk diperlukan", 400);
     }
@@ -191,19 +191,19 @@ export async function POST(request) {
 
     // Insert product with proper error handling for both schema versions
     let res;
-    const productData = [name.trim(), description?.trim() || null, null, category];
-    
+    const productData = [name.trim(), description?.trim() || null, null, category, show_stock ? 1 : 0];
+
     try {
       const now = nowWIBForSQL();
       res = await run(
-        `INSERT INTO products (name, description, image_path, category_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO products (name, description, image_path, category_id, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [...productData, now, now]
       );
     } catch (e) {
       // Fallback for legacy schema
       const now = nowWIBForSQL();
       res = await run(
-        `INSERT INTO products (name, description, image_path, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`, 
+        `INSERT INTO products (name, description, image_path, category, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [...productData, now, now]
       );
     }
@@ -213,7 +213,7 @@ export async function POST(request) {
     // Insert units if provided
     if (Array.isArray(units) && units.length > 0) {
       const insertUnitSQL = `INSERT INTO product_units (product_id, unit_name, qty_per_unit, price, stock) VALUES (?, ?, ?, ?, ?)`;
-      
+
       for (const u of units) {
         const unitData = [
           newId,
@@ -242,12 +242,12 @@ export async function POST(request) {
        WHERE p.id = ?`,
       [newId]
     );
-    
+
     const createdUnits = await all(
-      "SELECT * FROM product_units WHERE product_id = ? ORDER BY id", 
+      "SELECT * FROM product_units WHERE product_id = ? ORDER BY id",
       [newId]
     );
-    
+
     const result = formatProduct(created);
     result.units = createdUnits || [];
 
@@ -261,7 +261,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, name, description, category, base64, units } = body || {};
+    const { id, name, description, category, base64, units, show_stock } = body || {};
 
     if (!id) {
       return errorResponse("ID produk diperlukan", 400);
@@ -278,7 +278,7 @@ export async function PUT(request) {
     // Update product fields
     const updateFields = [];
     const updateParams = [];
-    
+
     if (name !== undefined) {
       updateFields.push("name = ?");
       updateParams.push(name.trim());
@@ -291,11 +291,15 @@ export async function PUT(request) {
       updateFields.push("category_id = ?");
       updateParams.push(category);
     }
+    if (show_stock !== undefined) {
+      updateFields.push("show_stock = ?");
+      updateParams.push(show_stock ? 1 : 0);
+    }
 
     if (updateFields.length > 0) {
       updateParams.push(id);
       const sql = `UPDATE products SET ${updateFields.join(", ")} WHERE id = ?`;
-      
+
       try {
         await run(sql, updateParams);
       } catch (e) {
@@ -327,7 +331,7 @@ export async function PUT(request) {
           Math.max(0, Number(u.price) || 0),
           Math.max(0, Number(u.stock) || 0)
         ];
-        
+
         if (u.id && existingUnitIds.has(u.id)) {
           // Update existing unit
           await run(
@@ -348,7 +352,7 @@ export async function PUT(request) {
     if (base64?.trim()) {
       const base = safeBase(name || prod.name, id);
       const savedFilename = await saveImageFromBase64(base64, base);
-      
+
       if (savedFilename) {
         // Clean up old image
         if (prod.image_path && prod.image_path !== savedFilename) {
@@ -361,7 +365,7 @@ export async function PUT(request) {
             console.warn("Failed to delete old image:", e);
           }
         }
-        
+
         await run("UPDATE products SET image_path = ?, updated_at = ? WHERE id = ?", [savedFilename, nowWIBForSQL(), id]);
       }
     }
@@ -373,15 +377,15 @@ export async function PUT(request) {
        WHERE p.id = ?`,
       [id]
     );
-    
+
     const updatedUnits = await all(
-      "SELECT * FROM product_units WHERE product_id = ? ORDER BY id", 
+      "SELECT * FROM product_units WHERE product_id = ? ORDER BY id",
       [id]
     );
-    
+
     const result = formatProduct(updated);
     result.units = updatedUnits || [];
-    
+
     return successResponse({ success: true, product: result });
   } catch (err) {
     console.error("PUT /api/product error:", err);
@@ -393,7 +397,7 @@ export async function DELETE(request) {
   try {
     const body = await request.json();
     const { id } = body || {};
-    
+
     if (!id) {
       return errorResponse("ID produk diperlukan", 400);
     }
@@ -407,7 +411,7 @@ export async function DELETE(request) {
     }
 
     // Clean up image file
-  if (prod.image_path) {
+    if (prod.image_path) {
       try {
         const filePath = path.join(imagesRoot, prod.image_path);
         if (fs.existsSync(filePath)) {
@@ -421,7 +425,7 @@ export async function DELETE(request) {
     // Delete product (units will be deleted by foreign key constraints if set up)
     await run("DELETE FROM product_units WHERE product_id = ?", [id]);
     await run("DELETE FROM products WHERE id = ?", [id]);
-    
+
     return successResponse({ success: true });
   } catch (err) {
     console.error("DELETE /api/product error:", err);

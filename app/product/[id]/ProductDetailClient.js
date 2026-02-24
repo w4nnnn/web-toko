@@ -97,13 +97,13 @@ export default function ProductDetailClient({ product, discounts = [] }) {
     (product.units || []).forEach((u) => {
       const q = qtyByUnit[u.id] || 0;
       if (q > 0) {
-        items.push({ 
-          unit_id: u.id, 
+        items.push({
+          unit_id: u.id,
           quantity: q
         });
       }
     });
-    
+
     if (items.length === 0) {
       api.warning({ message: "Pilih jumlah unit terlebih dahulu" });
       return;
@@ -117,13 +117,13 @@ export default function ProductDetailClient({ product, discounts = [] }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item)
         });
-        
+
         const data = await res.json();
         if (!data.success) {
           throw new Error(data.error || "Gagal menambahkan ke keranjang");
         }
       }
-      
+
       api.success({ message: "Berhasil ditambahkan ke keranjang" });
       // Reset quantities after successful add
       const resetQty = {};
@@ -153,12 +153,12 @@ export default function ProductDetailClient({ product, discounts = [] }) {
         });
       }
     });
-    
+
     if (items.length === 0) {
       api.warning({ message: "Pilih jumlah unit terlebih dahulu" });
       return;
     }
-    
+
     try {
       const resp = await fetch('/api/checkout/direct', {
         method: 'POST',
@@ -178,19 +178,19 @@ export default function ProductDetailClient({ product, discounts = [] }) {
   return (
     <Card className="p-4">
       {contextHolder}
-        {/* Back Button */}
-        <div className="mb-4">
-          <Button 
-            onClick={handleBack} 
-            icon={<ArrowLeft className="w-4 h-4" />}
-            type="text"
-            className="flex items-center gap-2"
-          >
-            Kembali
-          </Button>
-        </div>
-        
-        <div className="flex flex-col md:flex-row md:items-stretch">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button
+          onClick={handleBack}
+          icon={<ArrowLeft className="w-4 h-4" />}
+          type="text"
+          className="flex items-center gap-2"
+        >
+          Kembali
+        </Button>
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-stretch">
         {/* Left: 35% image */}
         <div className="w-full md:w-[40%] p-3">
           <div className="w-full h-64 md:h-full overflow-hidden bg-gray-100">
@@ -208,79 +208,81 @@ export default function ProductDetailClient({ product, discounts = [] }) {
 
         {/* Right: 65% content */}
         <div className="w-full md:w-[60%] p-3">
-        <h1 className="text-2xl font-bold m-0">{product.name}</h1>
-        <div className="mt-2 flex items-center gap-3">
-          {product.category && <Tag color="blue">{product.category}</Tag>}
-        </div>
-        <p className="text-gray-700 mt-2 whitespace-pre-wrap">{product.description || "-"}</p>
+          <h1 className="text-2xl font-bold m-0">{product.name}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            {product.category && <Tag color="blue">{product.category}</Tag>}
+          </div>
+          <p className="text-gray-700 mt-2 whitespace-pre-wrap">{product.description || "-"}</p>
 
-        <div className="mt-4">
-          {product.units?.length === 0 ? (
-            <div className="text-sm text-gray-500">Tidak ada unit</div>
-          ) : (
-            <List>
-              {product.units?.map((u) => (
-                <List.Item key={u.id || u.unit_name} className="p-0">
-                  <div className="p-3 rounded-md flex items-center justify-between w-full">
-                    <div>
-                      <div className="font-semibold">{u.unit_name}</div>
-                      <div className="text-xs text-gray-600">Isi: {u.qty_per_unit}</div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        {(() => {
-                          const originalPrice = Number(u.price || 0);
-                          const discountPrice = resolveDiscountPrice(originalPrice, product.id, u.id, discounts, {
-                            items: selectedItems,
-                            aggregateCache
-                          });
-                          
-                          if (discountPrice !== null) {
-                            return (
-                              <div>
-                                <div className="text-xs text-gray-400 line-through">{formatPrice(originalPrice)}</div>
-                                <div className="font-medium text-green-600">{formatPrice(discountPrice)}</div>
-                              </div>
-                            );
-                          }
-                          
-                          return <div className="font-medium">{formatPrice(originalPrice)}</div>;
-                        })()}
-                        <div className="text-xs mt-1">
-                          {Number(u.stock || 0) > 0 ? (
-                            <span className="text-gray-600">Stok: {Number(u.stock || 0).toLocaleString("id-ID")}</span>
-                          ) : (
-                            <span className="text-red-600 font-semibold">Stok: Habis</span>
-                          )}
+          <div className="mt-4">
+            {product.units?.length === 0 ? (
+              <div className="text-sm text-gray-500">Tidak ada unit</div>
+            ) : (
+              <List>
+                {product.units?.map((u) => (
+                  <List.Item key={u.id || u.unit_name} className="p-0">
+                    <div className="p-3 rounded-md flex items-center justify-between w-full">
+                      <div>
+                        <div className="font-semibold">{u.unit_name}</div>
+                        <div className="text-xs text-gray-600">Isi: {u.qty_per_unit}</div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          {(() => {
+                            const originalPrice = Number(u.price || 0);
+                            const discountPrice = resolveDiscountPrice(originalPrice, product.id, u.id, discounts, {
+                              items: selectedItems,
+                              aggregateCache
+                            });
+
+                            if (discountPrice !== null) {
+                              return (
+                                <div>
+                                  <div className="text-xs text-gray-400 line-through">{formatPrice(originalPrice)}</div>
+                                  <div className="font-medium text-green-600">{formatPrice(discountPrice)}</div>
+                                </div>
+                              );
+                            }
+
+                            return <div className="font-medium">{formatPrice(originalPrice)}</div>;
+                          })()}
+                          <div className="text-xs mt-1">
+                            {Number(u.stock || 0) > 0 ? (
+                              <span className="text-gray-600">
+                                {product.show_stock !== 0 ? `Stok: ${Number(u.stock || 0).toLocaleString("id-ID")}` : "Stok: Tersedia"}
+                              </span>
+                            ) : (
+                              <span className="text-red-600 font-semibold">Stok: Habis</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="small" onClick={() => dec(u.id)} disabled={(qtyByUnit[u.id] || 0) <= 0}>-</Button>
+                          <InputNumber
+                            size="small"
+                            min={0}
+                            max={Number(u.stock || 0)}
+                            value={qtyByUnit[u.id] || 0}
+                            onChange={(val) => handleManualChange(u.id, val)}
+                            controls={false}
+                            className="w-16 text-center"
+                          />
+                          <Button
+                            size="small"
+                            type="primary"
+                            onClick={() => inc(u.id)}
+                            disabled={Number(u.stock || 0) <= 0 || (qtyByUnit[u.id] || 0) >= Number(u.stock || 0)}
+                          >
+                            +
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="small" onClick={() => dec(u.id)} disabled={(qtyByUnit[u.id] || 0) <= 0}>-</Button>
-                        <InputNumber
-                          size="small"
-                          min={0}
-                          max={Number(u.stock || 0)}
-                          value={qtyByUnit[u.id] || 0}
-                          onChange={(val) => handleManualChange(u.id, val)}
-                          controls={false}
-                          className="w-16 text-center"
-                        />
-                        <Button
-                          size="small"
-                          type="primary"
-                          onClick={() => inc(u.id)}
-                          disabled={Number(u.stock || 0) <= 0 || (qtyByUnit[u.id] || 0) >= Number(u.stock || 0)}
-                        >
-                          +
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                </List.Item>
-              ))}
-            </List>
-          )}
-        </div>
+                  </List.Item>
+                ))}
+              </List>
+            )}
+          </div>
 
         </div>
       </div>
@@ -343,7 +345,7 @@ export default function ProductDetailClient({ product, discounts = [] }) {
           <div className="w-full sm:w-auto">
             <Space className="w-full sm:w-auto" size="middle">
               <Button type="primary" onClick={buyNow} className="flex-1 sm:flex-initial">Beli Sekarang</Button>
-              <Button onClick={addToCart} className="flex-1 sm:flex-initial"><ShoppingCart className="w-5"/></Button>
+              <Button onClick={addToCart} className="flex-1 sm:flex-initial"><ShoppingCart className="w-5" /></Button>
             </Space>
           </div>
         </div>

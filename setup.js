@@ -102,6 +102,7 @@ db.serialize(() => {
       description TEXT,
       image_path TEXT,
       category_id INTEGER,
+      show_stock INTEGER NOT NULL DEFAULT 1 CHECK (show_stock IN (0,1)),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE SET NULL
