@@ -77,7 +77,7 @@ export default function ManagementProduct() {
     form.setFieldsValue({
       name: record.name,
       description: record.description,
-      category: record.category,
+      category: record.category_id || record.category,
       show_stock: record.show_stock === undefined ? true : Boolean(record.show_stock),
       units: Array.isArray(record.units) && record.units.length > 0
         ? record.units.map((u) => ({ unit_name: u.unit_name || "unit", qty_per_unit: u.qty_per_unit ?? 1, price: u.price ?? 0, stock: u.stock ?? 0, id: u.id }))

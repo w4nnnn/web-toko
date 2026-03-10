@@ -39,9 +39,10 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
   useEffect(() => {
     // when editing and categories loaded, try to set category field to matching id
     if (editing && categories.length > 0) {
-      const found = categories.find((c) => String(c.id) === String(editing.category) || c.name === editing.category);
+      const catId = editing.category_id || editing.category;
+      const found = categories.find((c) => String(c.id) === String(catId) || c.name === catId);
       if (found) form.setFieldsValue({ category: found.id });
-      else form.setFieldsValue({ category: editing.category || undefined });
+      else form.setFieldsValue({ category: catId || undefined });
     }
   }, [editing, categories]);
   return (

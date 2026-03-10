@@ -200,6 +200,7 @@ export async function POST(request) {
         [...productData, now, now]
       );
     } catch (e) {
+      console.error("First insert query failed:", e);
       // Fallback for legacy schema
       const now = nowWIBForSQL();
       res = await run(
@@ -303,6 +304,7 @@ export async function PUT(request) {
       try {
         await run(sql, updateParams);
       } catch (e) {
+        console.error("First update query failed:", e);
         // Fallback for legacy schema
         const legacyFields = updateFields.map(f => f.replace("category_id", "category"));
         const legacySql = `UPDATE products SET ${legacyFields.join(", ")} WHERE id = ?`;

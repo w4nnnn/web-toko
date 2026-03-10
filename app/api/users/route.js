@@ -117,10 +117,15 @@ export async function PATCH(req) {
     const user = getUserFromToken(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { is_online } = body || {};
-  const now = nowWIBForSQL();
-  await run("UPDATE users SET is_online = ?, last_active = ? WHERE id = ?", [is_online ? 1 : 0, now, user.id]);
+    let body = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      // abaikan jika body kosong atau bukan valid JSON
+    }
+    const { is_online } = body;
+    const now = nowWIBForSQL();
+    await run("UPDATE users SET is_online = ?, last_active = ? WHERE id = ?", [is_online ? 1 : 0, now, user.id]);
     const updated = await get("SELECT id, is_online, last_active FROM users WHERE id = ?", [user.id]);
     return NextResponse.json({ success: true, data: updated }, { status: 200 });
   } catch (err) {

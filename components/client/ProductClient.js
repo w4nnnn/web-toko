@@ -292,7 +292,7 @@ export default function ProductClient({ onAddToCart }) {
                   src={`/api/product?filename=${p.image_path}`}
                   alt={p.name}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized
                 />
