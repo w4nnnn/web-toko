@@ -822,7 +822,7 @@ export default function ManagementOrders() {
                 </Title>
                 <div>
                   <Image
-                    src={`/api/product?filename=${selectedOrder.proof_payment_path || selectedOrder.proof}`}
+                    src={`/api/product?filename=${selectedOrder.proof_payment_path || selectedOrder.proof}&t=${Date.now()}`}
                     alt="Bukti Pembayaran"
                     width={240}
                   />

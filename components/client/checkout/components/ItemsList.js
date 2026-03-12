@@ -35,7 +35,7 @@ export default function ItemsList({ items = [], discounts = [] }) {
                 {item.image_path && (
                   // Using next/image for optimization, fallback to img if needed
                   <img
-                    src={`/api/product?filename=${item.image_path}`}
+                    src={`/api/product?filename=${item.image_path}&t=${Date.now()}`}
                     alt={item.product_name}
                     className="w-12 h-12 object-cover rounded"
                   />

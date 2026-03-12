@@ -237,7 +237,7 @@ export default function CartClient({ onStartShopping }) {
 											<div className="flex-shrink-0">
 												{item.image_path ? (
 													<Image
-														src={`/api/product?filename=${item.image_path}`}
+														src={`/api/product?filename=${item.image_path}&t=${Date.now()}`}
 														alt={item.product_name}
 														width={80}
 														height={80}

@@ -115,7 +115,11 @@ export default function SuccessNonCash({
               )}
               {!proofFile && order?.proof_payment_path && (
                 <div className="mt-2 flex justify-center">
-                  <Image src={`/api/product?filename=${order.proof_payment_path}`} alt="bukti" width={160} />
+                  <Image 
+                    src={`/api/product?filename=${order.proof_payment_path}&t=${Date.now()}`} 
+                    alt="bukti" 
+                    width={160} 
+                  />
                 </div>
               )}
               {proofFile && (

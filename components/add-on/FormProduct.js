@@ -81,12 +81,16 @@ export default function ProductForm({ open, onClose, onSave, form, editing, file
           </Upload>
           {fileData && (
             <div className="mt-2">
-              <img src={`data:image;base64,${fileData}`} alt="preview" className="max-h-36 object-contain border" />
+              <img src={`data:image;base64,${fileData}`} alt="preview" className="max-h-36 object-cover border" />
             </div>
           )}
           {!fileData && editing?.image_path && (
             <div className="mt-2">
-              <Image src={`/api/product?filename=${editing.image_path}`} alt="preview" width={120} />
+              <Image 
+                src={`/api/product?filename=${editing.image_path}&t=${Date.now()}`} 
+                alt="preview" 
+                width={120} 
+              />
             </div>
           )}
         </Form.Item>

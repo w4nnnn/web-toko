@@ -196,7 +196,7 @@ export default function ProductDetailClient({ product, discounts = [] }) {
           <div className="w-full h-64 md:h-full overflow-hidden bg-gray-100">
             {product.image_path ? (
               <img
-                src={`/api/product?filename=${product.image_path}`}
+                src={`/api/product?filename=${product.image_path}&t=${Date.now()}`}
                 alt={product.name || "Produk"}
                 className="w-full h-full object-cover rounded-md"
               />

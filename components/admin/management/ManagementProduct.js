@@ -217,7 +217,13 @@ export default function ManagementProduct() {
       key: 'image_path',
       width: 100,
       render: (v) => v ?
-        <Image src={`/api/product?filename=${v}`} alt="img" width={72} height={72} /> :
+        <Image 
+          src={`/api/product?filename=${v}&t=${Date.now()}`} 
+          alt="img" 
+          width={72} 
+          height={72} 
+          style={{ objectFit: 'cover' }}
+        /> :
         <div className="w-18 h-18 bg-gray-100 flex items-center justify-center text-sm text-gray-400">No</div>
     },
     {

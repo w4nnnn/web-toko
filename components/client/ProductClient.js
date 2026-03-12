@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Card, Spin, Empty, Input, notification, Select, Button, Checkbox, Divider } from "antd";
 
 const { Option } = Select;
@@ -288,13 +287,10 @@ export default function ProductClient({ onAddToCart }) {
           cover={
             p.image_path ? (
               <div className="w-full h-40 relative bg-gray-100 overflow-hidden rounded-t-lg">
-                <Image
-                  src={`/api/product?filename=${p.image_path}`}
+                <img
+                  src={`/api/product?filename=${p.image_path}&t=${Date.now()}`}
                   alt={p.name}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  unoptimized
+                  className="w-full h-full object-cover"
                 />
               </div>
             ) : (
