@@ -67,6 +67,11 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: "username, password, role and no_hp are required" }), { status: 400 });
     }
 
+    const existing = await get("SELECT id FROM users WHERE username = ?", [username]);
+    if (existing) {
+      return new Response(JSON.stringify({ error: "Username sudah digunakan, silakan pilih username lain." }), { status: 409 });
+    }
+
     const res = await run(
       `INSERT INTO users (name, username, password, role, no_hp) VALUES (?, ?, ?, ?, ?)`,
       [name || null, username, password, role, no_hp]
@@ -75,7 +80,9 @@ export async function POST(req) {
     return new Response(JSON.stringify(created), { status: 201 });
   } catch (err) {
     console.error(err);
-    // unique constraint on username
+    if (String(err).includes("UNIQUE constraint failed")) {
+      return new Response(JSON.stringify({ error: "Username sudah digunakan, silakan pilih username lain." }), { status: 409 });
+    }
     return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
   }
 }
