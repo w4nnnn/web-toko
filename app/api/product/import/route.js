@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { init, run } from "@/lib/db.js";
 import { nowWIBForSQL } from '@/lib/module/TimestampIndonesia.js';
 
+function normalizeCategoryId(value) {
+    if (value === undefined) return undefined;
+    if (value === null || value === "") return null;
+    const n = Number(value);
+    if (!Number.isInteger(n) || n <= 0) return NaN;
+    return n;
+}
+
 export async function POST(request) {
     try {
         const { products } = await request.json();
@@ -21,20 +29,17 @@ export async function POST(request) {
                 continue;
             }
 
-            const now = nowWIBForSQL();
-            let res;
-            try {
-                res = await run(
-                    `INSERT INTO products (name, description, image_path, category_id, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [name.trim(), description?.trim() || null, null, category, show_stock ? 1 : 0, now, now]
-                );
-            } catch (e) {
-                // Fallback for legacy schema
-                res = await run(
-                    `INSERT INTO products (name, description, image_path, category, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [name.trim(), description?.trim() || null, null, category, show_stock ? 1 : 0, now, now]
-                );
+            const categoryId = normalizeCategoryId(category);
+            if (Number.isNaN(categoryId)) {
+                errorCount++;
+                continue;
             }
+
+            const now = nowWIBForSQL();
+            const res = await run(
+                `INSERT INTO products (name, description, image_path, category_id, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [name.trim(), description?.trim() || null, null, categoryId ?? null, show_stock ? 1 : 0, now, now]
+            );
 
             const newId = res.lastID;
 

@@ -20,6 +20,14 @@ function successResponse(data, status = 200) {
   return NextResponse.json(data, { status });
 }
 
+function normalizeCategoryId(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n <= 0) return NaN;
+  return n;
+}
+
 // Helper function to format product with category
 function formatProduct(product, categoryName = null) {
   if (!product) return null;
@@ -189,25 +197,22 @@ export async function POST(request) {
 
     await init();
 
-    // Insert product with proper error handling for both schema versions
-    let res;
-    const productData = [name.trim(), description?.trim() || null, null, category, show_stock ? 1 : 0];
-
-    try {
-      const now = nowWIBForSQL();
-      res = await run(
-        `INSERT INTO products (name, description, image_path, category_id, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [...productData, now, now]
-      );
-    } catch (e) {
-      console.error("First insert query failed:", e);
-      // Fallback for legacy schema
-      const now = nowWIBForSQL();
-      res = await run(
-        `INSERT INTO products (name, description, image_path, category, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [...productData, now, now]
-      );
+    const categoryId = normalizeCategoryId(category);
+    if (Number.isNaN(categoryId)) {
+      return errorResponse("Kategori tidak valid", 400);
     }
+    if (categoryId !== null && categoryId !== undefined) {
+      const cat = await get("SELECT id FROM categories WHERE id = ?", [categoryId]);
+      if (!cat) {
+        return errorResponse("Kategori tidak ditemukan", 400);
+      }
+    }
+
+    const now = nowWIBForSQL();
+    const res = await run(
+      `INSERT INTO products (name, description, image_path, category_id, show_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name.trim(), description?.trim() || null, null, categoryId ?? null, show_stock ? 1 : 0, now, now]
+    );
 
     const newId = res.lastID;
 
@@ -276,6 +281,17 @@ export async function PUT(request) {
       return errorResponse("Produk tidak ditemukan", 404);
     }
 
+    const categoryId = normalizeCategoryId(category);
+    if (Number.isNaN(categoryId)) {
+      return errorResponse("Kategori tidak valid", 400);
+    }
+    if (categoryId !== null && categoryId !== undefined) {
+      const cat = await get("SELECT id FROM categories WHERE id = ?", [categoryId]);
+      if (!cat) {
+        return errorResponse("Kategori tidak ditemukan", 400);
+      }
+    }
+
     // Update product fields
     const updateFields = [];
     const updateParams = [];
@@ -290,7 +306,7 @@ export async function PUT(request) {
     }
     if (category !== undefined) {
       updateFields.push("category_id = ?");
-      updateParams.push(category);
+      updateParams.push(categoryId ?? null);
     }
     if (show_stock !== undefined) {
       updateFields.push("show_stock = ?");
@@ -300,16 +316,7 @@ export async function PUT(request) {
     if (updateFields.length > 0) {
       updateParams.push(id);
       const sql = `UPDATE products SET ${updateFields.join(", ")} WHERE id = ?`;
-
-      try {
-        await run(sql, updateParams);
-      } catch (e) {
-        console.error("First update query failed:", e);
-        // Fallback for legacy schema
-        const legacyFields = updateFields.map(f => f.replace("category_id", "category"));
-        const legacySql = `UPDATE products SET ${legacyFields.join(", ")} WHERE id = ?`;
-        await run(legacySql, updateParams);
-      }
+      await run(sql, updateParams);
     }
 
     // Update units
