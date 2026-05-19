@@ -12,8 +12,17 @@ export default function AnnouncementDialog() {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const router = useRouter();
 
+  // Don't show on login page
+  const [isLoginPage, setIsLoginPage] = useState(false);
+  useEffect(() => {
+    setIsLoginPage(window.location.pathname === '/login');
+  }, []);
+
   const fetchAnnouncement = useCallback(async () => {
     try {
+      // Don't fetch if on login page
+      if (window.location.pathname === '/login') return;
+
       const res = await fetch('/api/announcement');
       const json = await res.json();
       if (!json.success) return;
@@ -57,7 +66,7 @@ export default function AnnouncementDialog() {
     }
   };
 
-  if (!announcement) return null;
+  if (!announcement || isLoginPage) return null;
 
   const hasProduct = !!announcement.product_id;
   const hasLink = !!announcement.link_url;
