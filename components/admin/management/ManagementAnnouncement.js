@@ -229,7 +229,7 @@ export default function ManagementAnnouncement() {
             }
             options={products.map((p) => ({
               value: p.id,
-              label: `${p.name} (Rp ${p.price || 0})`,
+              label: p.name,
             }))}
           />
         </Form.Item>
