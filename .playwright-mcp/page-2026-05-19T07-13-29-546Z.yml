@@ -1,9 +1,0 @@
-- generic [ref=e5]:
-  - heading "Login" [level=3] [ref=e6]
-  - generic [ref=e7]:
-    - textbox "Username" [ref=e13]
-    - generic [ref=e19]:
-      - textbox "Password" [ref=e20]
-      - img "eye-invisible" [ref=e22]:
-        - img [ref=e23]
-    - button "Login" [ref=e31]
