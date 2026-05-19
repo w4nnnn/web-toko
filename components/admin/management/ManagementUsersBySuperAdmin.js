@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, notification } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserAddOutlined } from "@ant-design/icons";
+import { useDebounce } from "@/lib/useDebounce";
 
 const { Option } = Select;
 
@@ -14,7 +15,8 @@ export default function ManagementUsersBySuperAdmin() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
-  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const debouncedSearch = useDebounce(userSearch, 300);
+  const normalizedUserSearch = debouncedSearch.trim().toLowerCase();
   const filteredUsers = normalizedUserSearch
     ? users.filter((u) => {
         const roleText = String(u.role || '').replace(/_/g, ' ').toLowerCase();

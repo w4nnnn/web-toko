@@ -3,7 +3,7 @@
 import SidebarAndNavbar from "@/components/shared/ui/SidebarAndNavbar";
 import ManagementProduct from "@/components/admin/management/ManagementProduct";
 import ManagementOrders from "@/components/admin/management/ManagementOrders";
-import { UserOutlined, AppstoreOutlined, LogoutOutlined, PercentageOutlined, CreditCardOutlined, ShoppingCartOutlined, SettingOutlined, MessageOutlined, TagOutlined, DashboardOutlined, BgColorsOutlined } from '@ant-design/icons';
+import { UserOutlined, AppstoreOutlined, LogoutOutlined, PercentageOutlined, CreditCardOutlined, ShoppingCartOutlined, SettingOutlined, MessageOutlined, TagOutlined, DashboardOutlined, BgColorsOutlined, BellOutlined } from '@ant-design/icons';
 import { useRouter } from "next/navigation";
 import ManagementDiscountPercentage from "@/components/admin/management/ManagementDiscountPercentage";
 import ManagementDiscountNominal from "@/components/admin/management/ManagementDiscountNominal";
@@ -15,6 +15,7 @@ import ManagementBrand from "@/components/admin/management/Brand";
 import StatistikPenjualan from "@/components/admin/management/StatistikPenjualan";
 import ManagementUsersBySuperAdmin from "@/components/admin/management/ManagementUsersBySuperAdmin";
 import ThemeSettings from "@/components/admin/management/ThemeSettings";
+import ManagementAnnouncement from "@/components/admin/management/ManagementAnnouncement";
 
 export default function DashboardAdminPage() {
   const router = useRouter();
@@ -124,6 +125,16 @@ export default function DashboardAdminPage() {
       component: (
         <>
           <ThemeSettings />
+        </>
+      ),
+    },
+    {
+      id: "announcement",
+      label: "Pengumuman",
+      icon: BellOutlined,
+      component: (
+        <>
+          <ManagementAnnouncement />
         </>
       ),
     },

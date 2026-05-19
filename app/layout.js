@@ -4,6 +4,7 @@ import '@ant-design/v5-patch-for-react-19';
 import PresenceProvider from "@/components/client/PresenceProvider";
 import GlobalNotifications from "@/components/client/GlobalNotifications";
 import ThemeConfigProvider from "@/components/client/ThemeConfigProvider";
+import AnnouncementDialog from "@/components/client/AnnouncementDialog";
 
 export default function RootLayout({ children }) {
   return (
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
         <ThemeConfigProvider>
           <PresenceProvider />
           <GlobalNotifications />
+          <AnnouncementDialog />
           {children}
         </ThemeConfigProvider>
       </body>

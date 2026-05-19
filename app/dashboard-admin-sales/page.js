@@ -12,6 +12,7 @@ import {
   ShoppingCartOutlined,
   SettingOutlined,
   MessageOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import ManagementDiscountPercentage from "@/components/admin/management/ManagementDiscountPercentage";
@@ -19,12 +20,14 @@ import ManagementDiscountNominal from "@/components/admin/management/ManagementD
 import ManagementDiscountTiered from "@/components/admin/management/ManagementDiscountTiered";
 import { useEffect, useState } from "react";
 import Chating from "@/components/shared/ui/Chating";
+import ManagementAnnouncement from "@/components/admin/management/ManagementAnnouncement";
 
 export default function DashboardAdminSalesPage() {
   const router = useRouter();
   const [userMenuInfo, setUserMenuInfo] = useState({ name: "", username: "", avatar: null });
   const [brandName, setBrandName] = useState("Toko Sembako");
   const [brandLogoFile, setBrandLogoFile] = useState(null);
+  const [canEditAnnouncement, setCanEditAnnouncement] = useState(false);
   const userInitial = (userMenuInfo.username || userMenuInfo.name || "").charAt(0).toUpperCase();
 
   useEffect(() => {
@@ -93,6 +96,22 @@ export default function DashboardAdminSalesPage() {
     return () => window.removeEventListener('brandUpdated', handler);
   }, []);
 
+  // Fetch announcement permissions
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/announcement');
+        const json = await res.json();
+        if (json.success) {
+          const roles = json.data.permissions?.roles || [];
+          setCanEditAnnouncement(roles.includes('admin_sales'));
+        }
+      } catch (e) {
+        // noop
+      }
+    })();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth', { method: 'DELETE' });
@@ -158,6 +177,19 @@ export default function DashboardAdminSalesPage() {
       ),
     },
   ];
+
+  if (canEditAnnouncement) {
+    menuItems.push({
+      id: 'announcement',
+      label: 'Pengumuman',
+      icon: BellOutlined,
+      component: (
+        <>
+          <ManagementAnnouncement />
+        </>
+      ),
+    });
+  }
 
   return (
     <SidebarAndNavbar

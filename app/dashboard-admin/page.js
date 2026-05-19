@@ -4,7 +4,7 @@ import SidebarAndNavbar from "@/components/shared/ui/SidebarAndNavbar";
 import ManagementProduct from "@/components/admin/management/ManagementProduct";
 import ManagementUsersByAdmin from "@/components/admin/management/ManagementUsersByAdmin";
 import ManagementOrders from "@/components/admin/management/ManagementOrders";
-import { UserOutlined, AppstoreOutlined, LogoutOutlined, PercentageOutlined, CreditCardOutlined, ShoppingCartOutlined, SettingOutlined, MessageOutlined, TagOutlined, DashboardOutlined } from '@ant-design/icons';
+import { UserOutlined, AppstoreOutlined, LogoutOutlined, PercentageOutlined, CreditCardOutlined, ShoppingCartOutlined, SettingOutlined, MessageOutlined, TagOutlined, DashboardOutlined, BellOutlined } from '@ant-design/icons';
 import { useRouter } from "next/navigation";
 import ManagementDiscountPercentage from "@/components/admin/management/ManagementDiscountPercentage";
 import ManagementDiscountNominal from "@/components/admin/management/ManagementDiscountNominal";
@@ -12,12 +12,14 @@ import ManagementDiscountTiered from "@/components/admin/management/ManagementDi
 import ManagementPayment from "@/components/admin/management/ManagementPayment";
 import { useEffect, useState } from "react";
 import Chating from "@/components/shared/ui/Chating";
+import ManagementAnnouncement from "@/components/admin/management/ManagementAnnouncement";
 
 export default function DashboardAdminPage() {
   const router = useRouter();
   const [userMenuInfo, setUserMenuInfo] = useState({ name: "", username: "", avatar: null});
   const [brandName, setBrandName] = useState('Toko Sembako');
   const [brandLogoFile, setBrandLogoFile] = useState(null);
+  const [canEditAnnouncement, setCanEditAnnouncement] = useState(false);
   const userInitial = (userMenuInfo.username || userMenuInfo.name || "").charAt(0).toUpperCase();
 
   useEffect(() => {
@@ -84,6 +86,23 @@ export default function DashboardAdminPage() {
     window.addEventListener('brandUpdated', handler);
     return () => window.removeEventListener('brandUpdated', handler);
   }, []);
+
+  // Fetch announcement permissions for conditional menu
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/announcement');
+        const json = await res.json();
+        if (json.success) {
+          const roles = json.data.permissions?.roles || [];
+          setCanEditAnnouncement(roles.includes('admin'));
+        }
+      } catch (e) {
+        // noop
+      }
+    })();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth", { method: "DELETE" });
@@ -157,8 +176,21 @@ export default function DashboardAdminPage() {
           <Chating />
         </>
       ),
-    }
+    },
   ];
+
+  if (canEditAnnouncement) {
+    menuItems.push({
+      id: "announcement",
+      label: "Pengumuman",
+      icon: BellOutlined,
+      component: (
+        <>
+          <ManagementAnnouncement />
+        </>
+      ),
+    });
+  }
 
   return (
     <SidebarAndNavbar 
