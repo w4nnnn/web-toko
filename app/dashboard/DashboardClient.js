@@ -3,16 +3,18 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductClient from "@/components/client/ProductClient";
 import FloatingBottomNav from "@/components/client/FloatingBottomNav";
-import { Home, MessagesSquare, ReceiptText, ShoppingCart, User } from "lucide-react";
+import { Home, MessagesSquare, ReceiptText, ShoppingCart, User, Users } from "lucide-react";
 import Profile from "@/components/client/Profile";
 import CartClient from "@/components/client/CartClient";
 import OrderClient from "@/components/client/OrderClient";
 import Chating from "@/components/shared/ui/Chating";
+import SalesClient from "@/components/client/SalesClient";
 
 export default function DashboardClient() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [activeId, setActiveId] = useState(tabParam || "home");
+  const [chatTargetId, setChatTargetId] = useState(null);
 
   // Update activeId when URL parameter changes
   useEffect(() => {
@@ -38,12 +40,25 @@ export default function DashboardClient() {
       component: <CartClient onStartShopping={() => setActiveId('home')} /> 
     },
     {
+      id: 'sales',
+      label: 'Sales',
+      icon: Users,
+      component: (
+        <div className="p-6 w-full">
+          <SalesClient onChatWithSales={(salesId) => {
+            setChatTargetId(salesId);
+            setActiveId('chat');
+          }} />
+        </div>
+      )
+    },
+    {
       id: 'chat',
       label: 'Chat',
       icon: MessagesSquare,
       component: (
         <div className="p-6 w-full">
-          <Chating />
+          <Chating initialUserId={chatTargetId} />
         </div>
       )
     },

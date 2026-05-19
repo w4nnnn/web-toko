@@ -31,7 +31,7 @@ const { TextArea } = Input;
 
 dayjs.locale('id');
 
-const Chating = () => {
+const Chating = ({ initialUserId = null }) => {
   const [conversations, setConversations] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -195,6 +195,34 @@ const Chating = () => {
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  useEffect(() => {
+    if (!initialUserId) return;
+
+    const targetConv = conversations.find(c => c.other_user_id === initialUserId);
+    if (targetConv) {
+      handleConversationClick(targetConv);
+      return;
+    }
+
+    const startNewChat = async () => {
+      try {
+        const res = await fetch(`/api/users/profile?id=${initialUserId}`);
+        const userData = await res.json();
+        if (userData && !userData.error) {
+          setCurrentChat({
+            other_user_id: userData.id,
+            other_user_name: userData.name || userData.username,
+            other_user_avatar: userData.avatar || null
+          });
+          setMessages([]);
+        }
+      } catch (err) {
+        console.error('Error starting new chat:', err);
+      }
+    };
+    startNewChat();
+  }, [initialUserId, conversations]);
 
   // Poll for new messages and show notification
   useEffect(() => {
