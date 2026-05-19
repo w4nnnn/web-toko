@@ -8,11 +8,24 @@ const { Option } = Select;
 
 export default function ManagementUsersBySuperAdmin() {
   const [users, setUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
+  const normalizedUserSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = normalizedUserSearch
+    ? users.filter((u) => {
+        const roleText = String(u.role || '').replace(/_/g, ' ').toLowerCase();
+        return (
+          String(u.name || '').toLowerCase().includes(normalizedUserSearch) ||
+          String(u.username || '').toLowerCase().includes(normalizedUserSearch) ||
+          String(u.no_hp || '').toLowerCase().includes(normalizedUserSearch) ||
+          roleText.includes(normalizedUserSearch)
+        );
+      })
+    : users;
 
   useEffect(() => {
     fetchUsers();
@@ -119,14 +132,16 @@ export default function ManagementUsersBySuperAdmin() {
         const colors = {
           superadmin: '#f50',
           admin: '#108ee9',
+          admin_sales: '#2db7f5',
           user: '#87d068'
         };
+        const roleLabel = String(role || '').replace(/_/g, ' ');
         return (
           <span style={{ 
             color: colors[role] || '#666',
             fontWeight: 'bold'
           }}>
-            {role}
+            {roleLabel}
           </span>
         );
       }
@@ -173,14 +188,23 @@ export default function ManagementUsersBySuperAdmin() {
   return (
     <div className="w-full">
       {contextHolder}
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-4 flex flex-wrap gap-3 justify-between items-center">
         <h2 className="text-lg font-semibold m-0">Manajemen Users</h2>
-        <Button type="primary" onClick={openCreate} icon={<PlusOutlined />}>Buat User</Button>
+        <div className="flex flex-wrap gap-2 items-center">
+          <Input
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+            placeholder="Cari user (nama, username, role, no hp)..."
+            style={{ width: 320, maxWidth: '100%' }}
+            allowClear
+          />
+          <Button type="primary" onClick={openCreate} icon={<PlusOutlined />}>Buat User</Button>
+        </div>
       </div>
 
       <Table 
         columns={columns} 
-        dataSource={users} 
+        dataSource={filteredUsers} 
         loading={loading} 
         rowKey="id" 
         pagination={{
@@ -206,6 +230,7 @@ export default function ManagementUsersBySuperAdmin() {
         onCancel={() => setModalOpen(false)} 
         onOk={() => form.submit()} 
         okText={editing ? 'Simpan' : 'Buat'}
+        forceRender
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ role: 'user' }}>
           <Form.Item label="Nama" name="name">
@@ -224,6 +249,7 @@ export default function ManagementUsersBySuperAdmin() {
             <Select>
               <Option value="superadmin">superadmin</Option>
               <Option value="admin">admin</Option>
+              <Option value="admin_sales">admin sales</Option>
               <Option value="user">user</Option>
             </Select>
           </Form.Item>

@@ -99,9 +99,11 @@ export default function LoginPage() {
         description: `Selamat datang, ${data.user?.name || data.user?.username || ""}`,
       });
 
-      const role = data.user?.role;
+      const role = String(data.user?.role || "").toLowerCase().replace(/\s+/g, "_");
       if (role === "admin") {
         router.push("/dashboard-admin");
+      } else if (role === "admin_sales") {
+        router.push("/dashboard-admin-sales");
       } else if (role === "superadmin") {
         router.push("/dashboard-superadmin");
       } else if (role === "user") {

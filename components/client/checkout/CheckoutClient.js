@@ -299,7 +299,7 @@ export default function CheckoutClient() {
       const handleConfirm = async () => {
         setSendingMessage(true);
         try {
-          const response = await fetch('/api/users?role=admin&online=true');
+          const response = await fetch('/api/users?roles=admin,admin_sales&online=true');
           const onlineAdmins = await response.json();
           if (!Array.isArray(onlineAdmins) || onlineAdmins.length === 0) {
             api.warning({ message: 'Tidak ada admin yang sedang online. Silakan coba lagi nanti.' });
@@ -341,7 +341,7 @@ export default function CheckoutClient() {
     const handleConfirm = async () => {
       setSendingMessage(true);
       try {
-        const response = await fetch('/api/users?role=admin&online=true');
+        const response = await fetch('/api/users?roles=admin,admin_sales&online=true');
         const onlineAdmins = await response.json();
         if (!Array.isArray(onlineAdmins) || onlineAdmins.length === 0) {
           api.warning({ message: 'Tidak ada admin yang sedang online. Silakan coba lagi nanti.' });

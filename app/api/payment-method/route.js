@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { init, get, all, run } from "@/lib/db";
+import jwt from "jsonwebtoken";
+import { getJwtSecret } from "@/lib/auth";
+
+const JWT_SECRET = getJwtSecret();
+
+function getUserFromToken(request) {
+  try {
+    const token = request.cookies.get("token")?.value;
+    if (!token) return null;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return {
+      ...decoded,
+      role: String(decoded?.role || "").toLowerCase().replace(/\s+/g, "_"),
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function canManagePaymentMethods(role) {
+  return role === "admin" || role === "superadmin";
+}
 
 // Helper functions for consistent responses
 function errorResponse(message, status = 500) {
@@ -103,6 +125,10 @@ export async function GET(request) {
 // POST - Create new payment method
 export async function POST(request) {
   try {
+    const user = getUserFromToken(request);
+    if (!user) return errorResponse("Unauthorized", 401);
+    if (!canManagePaymentMethods(user.role)) return errorResponse("Forbidden", 403);
+
     await init();
     // support multipart/form-data uploads (for QRIS images) via request.formData()
     let body = {};
@@ -170,6 +196,10 @@ export async function POST(request) {
 // PATCH - Update existing payment method
 export async function PATCH(request) {
   try {
+    const user = getUserFromToken(request);
+    if (!user) return errorResponse("Unauthorized", 401);
+    if (!canManagePaymentMethods(user.role)) return errorResponse("Forbidden", 403);
+
     await init();
     // support multipart/form-data for updates
     let body = {};
@@ -258,6 +288,10 @@ export async function PATCH(request) {
 // DELETE - Remove payment method
 export async function DELETE(request) {
   try {
+    const user = getUserFromToken(request);
+    if (!user) return errorResponse("Unauthorized", 401);
+    if (!canManagePaymentMethods(user.role)) return errorResponse("Forbidden", 403);
+
     await init();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

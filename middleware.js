@@ -25,7 +25,9 @@ function decodeJwtRole(token) {
     }
 
     const json = JSON.parse(jsonStr);
-    return (json?.role || json?.user?.role || "").toLowerCase();
+    return String(json?.role || json?.user?.role || "")
+      .toLowerCase()
+      .replace(/\s+/g, "_");
   } catch (_) {
     return null;
   }
@@ -62,8 +64,9 @@ export function middleware(request) {
   const role = decodeJwtRole(token);
 
   // Define allowed paths per role
-  const superadminAllowed = ["/login", "/dashboard", "/dashboard-admin", "/dashboard-superadmin", "/product", "/profile", "/checkout"]; 
+  const superadminAllowed = ["/login", "/dashboard", "/dashboard-admin", "/dashboard-admin-sales", "/dashboard-superadmin", "/product", "/profile", "/checkout"]; 
   const adminAllowed = ["/login", "/dashboard", "/dashboard-admin", "/product", "/profile", "/checkout"]; 
+  const adminSalesAllowed = ["/login", "/dashboard", "/dashboard-admin-sales", "/product", "/profile", "/checkout"]; 
   const userAllowed = ["/login", "/dashboard", "/product", "/profile", "/checkout"]; 
 
   let allowed = false;
@@ -77,6 +80,12 @@ export function middleware(request) {
     allowed = isAllowedPath(pathname, adminAllowed);
     if (!allowed) {
       const url = new URL("/dashboard-admin", request.url);
+      return NextResponse.redirect(url);
+    }
+  } else if (role === "admin_sales") {
+    allowed = isAllowedPath(pathname, adminSalesAllowed);
+    if (!allowed) {
+      const url = new URL("/dashboard-admin-sales", request.url);
       return NextResponse.redirect(url);
     }
   } else if (role === "user") {

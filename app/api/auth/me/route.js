@@ -18,9 +18,11 @@ export async function GET(request) {
     
     const decoded = jwt.verify(token, JWT_SECRET);
     
+    const role = String(decoded.role || "").toLowerCase().replace(/\s+/g, "_");
+
     return NextResponse.json({
       success: true,
-      user: { id: decoded.id, username: decoded.username, role: decoded.role }
+      user: { id: decoded.id, username: decoded.username, role }
     });
   } catch (err) {
     console.error("JWT verification error:", err);

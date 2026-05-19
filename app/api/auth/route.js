@@ -33,12 +33,13 @@ export async function POST(request) {
       return NextResponse.json({ error: "Username atau password salah" }, { status: 401 });
     }
 
-    const payload = { id: user.id, username: user.username, role: user.role };
+    const normalizedRole = String(user.role || "").toLowerCase().replace(/\s+/g, "_");
+    const payload = { id: user.id, username: user.username, role: normalizedRole };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 
     const res = NextResponse.json({
       success: true,
-      user: { id: user.id, name: user.name, username: user.username, role: user.role, no_hp: user.no_hp },
+      user: { id: user.id, name: user.name, username: user.username, role: normalizedRole, no_hp: user.no_hp },
     });
 
     const url = new URL(request.url);

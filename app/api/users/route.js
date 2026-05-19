@@ -5,6 +5,14 @@ import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = getJwtSecret();
+const ALLOWED_ROLES = new Set(["user", "admin", "admin_sales", "superadmin"]);
+
+function normalizeRole(role) {
+  return String(role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+}
 
 function getUserFromToken(request) {
   try {
@@ -24,6 +32,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const role = url.searchParams.get("role");
+    const rolesParam = url.searchParams.get("roles");
     const online = url.searchParams.get("online");
     const onlyIds = url.searchParams.get("onlyIds");
 
@@ -37,9 +46,18 @@ export async function GET(req) {
 
     const conditions = [];
     const params = [];
-    if (role) {
-      conditions.push("role = ?");
-      params.push(role);
+    if (rolesParam) {
+      const normalizedRoles = rolesParam
+        .split(",")
+        .map((r) => normalizeRole(r))
+        .filter(Boolean);
+      if (normalizedRoles.length) {
+        conditions.push(`LOWER(REPLACE(role, ' ', '_')) IN (${normalizedRoles.map(() => "?").join(",")})`);
+        params.push(...normalizedRoles);
+      }
+    } else if (role) {
+      conditions.push("LOWER(REPLACE(role, ' ', '_')) = ?");
+      params.push(normalizeRole(role));
     }
     if (online === "true") {
       // Use WIB-based threshold without SQLite time functions to avoid UTC mismatch
@@ -63,8 +81,12 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { name, username, password, role, no_hp } = body || {};
-    if (!username || !password || !role || !no_hp) {
+    const normalizedRole = normalizeRole(role);
+    if (!username || !password || !normalizedRole || !no_hp) {
       return new Response(JSON.stringify({ error: "username, password, role and no_hp are required" }), { status: 400 });
+    }
+    if (!ALLOWED_ROLES.has(normalizedRole)) {
+      return new Response(JSON.stringify({ error: "Invalid role" }), { status: 400 });
     }
 
     const existing = await get("SELECT id FROM users WHERE username = ?", [username]);
@@ -74,7 +96,7 @@ export async function POST(req) {
 
     const res = await run(
       `INSERT INTO users (name, username, password, role, no_hp) VALUES (?, ?, ?, ?, ?)`,
-      [name || null, username, password, role, no_hp]
+      [name || null, username, password, normalizedRole, no_hp]
     );
     const created = await get("SELECT id, name, username, role, no_hp FROM users WHERE id = ?", [res.lastID]);
     return new Response(JSON.stringify(created), { status: 201 });
@@ -100,7 +122,14 @@ export async function PUT(req) {
     if (name !== undefined) { fields.push("name = ?"); params.push(name); }
     if (username !== undefined) { fields.push("username = ?"); params.push(username); }
     if (password !== undefined) { fields.push("password = ?"); params.push(password); }
-    if (role !== undefined) { fields.push("role = ?"); params.push(role); }
+    if (role !== undefined) {
+      const normalizedRole = normalizeRole(role);
+      if (!ALLOWED_ROLES.has(normalizedRole)) {
+        return new Response(JSON.stringify({ error: "Invalid role" }), { status: 400 });
+      }
+      fields.push("role = ?");
+      params.push(normalizedRole);
+    }
     if (no_hp !== undefined) { fields.push("no_hp = ?"); params.push(no_hp); }
     if (is_online !== undefined) { fields.push("is_online = ?"); params.push(is_online ? 1 : 0); }
 

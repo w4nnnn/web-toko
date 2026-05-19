@@ -32,8 +32,8 @@ export default function GlobalNotifications() {
 
   // Helper: role check
   const isAdmin = () => {
-    const r = (userRef.current?.role || '').toLowerCase();
-    return r === 'admin' || r === 'superadmin';
+    const r = String(userRef.current?.role || '').toLowerCase().replace(/\s+/g, '_');
+    return r === 'admin' || r === 'admin_sales' || r === 'superadmin';
   };
 
   // Orders poll (admins only)

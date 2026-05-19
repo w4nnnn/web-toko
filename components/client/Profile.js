@@ -49,7 +49,7 @@ export default function Profile() {
 				password: "", // don't show password
 				no_hp: data.no_hp,
 			});
-			setAvatarPreview(data.avatar ? `/api/product?filename=${data.avatar}` : null);
+			setAvatarPreview(data.avatar ? `/api/avatar?filename=${data.avatar}` : null);
 		} catch (err) {
 			api.error({ message: "Gagal memuat profil", description: err.message });
 		} finally {

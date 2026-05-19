@@ -385,6 +385,7 @@ export default function ManagementPayment() {
         onOk={() => form.submit()}
         confirmLoading={loading}
         width={600}
+        forceRender
       >
         <Form
           form={form}
