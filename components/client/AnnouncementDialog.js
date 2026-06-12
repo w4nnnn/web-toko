@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Checkbox, Image, Typography } from 'antd';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
-const { Text, Title, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 const LS_KEY = 'dismissed_announcement_version';
 
 export default function AnnouncementDialog() {
@@ -11,17 +11,17 @@ export default function AnnouncementDialog() {
   const [announcement, setAnnouncement] = useState(null);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Don't show on login page
-  const [isLoginPage, setIsLoginPage] = useState(false);
-  useEffect(() => {
-    setIsLoginPage(window.location.pathname === '/login');
-  }, []);
+  const isLoginPage = pathname === '/login';
 
   const fetchAnnouncement = useCallback(async () => {
     try {
-      // Don't fetch if on login page
-      if (window.location.pathname === '/login') return;
+      // Only show to customers (role "user"), not admins
+      const meRes = await fetch('/api/auth/me');
+      if (!meRes.ok) return; // not logged in or error — skip
+      const meJson = await meRes.json();
+      if (!meJson.success || meJson.user?.role !== 'user') return;
 
       const res = await fetch('/api/announcement');
       const json = await res.json();
@@ -42,9 +42,11 @@ export default function AnnouncementDialog() {
     }
   }, []);
 
+  // Fetch announcement whenever pathname changes (e.g., login → dashboard)
   useEffect(() => {
+    if (isLoginPage) return;
     fetchAnnouncement();
-  }, [fetchAnnouncement]);
+  }, [fetchAnnouncement, isLoginPage]);
 
   const handleClose = () => {
     setVisible(false);
